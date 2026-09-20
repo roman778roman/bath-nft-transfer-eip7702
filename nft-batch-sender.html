@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NFT Batch Sender — Ambire Wallet</title>
+<style>
+  :root{
+    --bg:#0b0d12;
+    --bg-2:#12151d;
+    --card:#161a24;
+    --card-2:#1c2130;
+    --border:#262c3a;
+    --text:#e7ebf3;
+    --muted:#8b93a7;
+    --accent:#7c5cff;
+    --accent-2:#5b8cff;
+    --green:#2ecc8f;
+    --red:#ff5c72;
+    --yellow:#ffcf5c;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(124,92,255,.18), transparent 60%),
+      radial-gradient(1000px 500px at -10% 10%, rgba(91,140,255,.14), transparent 55%),
+      var(--bg);
+    padding:32px 16px 80px;
+  }
+  .wrap{max-width:960px;margin:0 auto}
+  header.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{
+    width:42px;height:42px;border-radius:12px;
+    background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    display:grid;place-items:center;font-weight:800;font-size:18px;color:#fff;
+    box-shadow:0 8px 24px rgba(124,92,255,.35);
+  }
+  .brand h1{font-size:19px;margin:0;font-weight:700;letter-spacing:.2px}
+  .brand p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+
+  .wallet-box{display:flex;align-items:center;gap:10px}
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--card);border:1px solid var(--border);
+    padding:8px 12px;border-radius:999px;font-size:13px;color:var(--muted);
+  }
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--red)}
+  .dot.on{background:var(--green);box-shadow:0 0 10px var(--green)}
+
+  .card{
+    background:linear-gradient(180deg,var(--card),var(--card-2));
+    border:1px solid var(--border);border-radius:var(--radius);
+    padding:22px;margin-bottom:20px;
+  }
+  .card h2{margin:0 0 16px;font-size:15px;font-weight:600;color:var(--text)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:640px){.grid{grid-template-columns:1fr}}
+  label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:7px;font-weight:500}
+  input,select{
+    width:100%;background:var(--bg-2);border:1px solid var(--border);
+    color:var(--text);padding:12px 14px;border-radius:10px;font-size:14px;outline:none;
+    transition:border-color .15s, box-shadow .15s;
+  }
+  input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,92,255,.18)}
+  input::placeholder{color:#5a6274}
+  .field{margin-bottom:2px}
+
+  .btn{
+    border:none;cursor:pointer;font-weight:600;font-size:14px;
+    padding:12px 20px;border-radius:10px;color:#fff;
+    display:inline-flex;align-items:center;justify-content:center;gap:9px;
+    transition:transform .08s, filter .15s, opacity .15s;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 8px 22px rgba(124,92,255,.32)}
+  .btn-primary:hover:not(:disabled){filter:brightness(1.08)}
+  .btn-ghost{background:var(--card-2);border:1px solid var(--border);color:var(--text)}
+  .btn-ghost:hover:not(:disabled){border-color:var(--accent)}
+  .btn-send{background:linear-gradient(135deg,var(--green),#27b3ff);box-shadow:0 8px 22px rgba(46,204,143,.3);width:100%;padding:15px;font-size:15px;margin-top:8px}
+  .btn-block{width:100%}
+
+  .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:4px}
+
+  .spinner{
+    width:16px;height:16px;border:2px solid rgba(255,255,255,.35);
+    border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* stats */
+  .stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .stat{
+    flex:1;min-width:120px;background:var(--bg-2);border:1px solid var(--border);
+    border-radius:12px;padding:14px 16px;
+  }
+  .stat .n{font-size:22px;font-weight:800}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:2px}
+  .stat.g .n{color:var(--green)} .stat.r .n{color:var(--red)} .stat.a .n{color:var(--accent-2)}
+
+  /* nft list */
+  .nft-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+  .nft{
+    background:var(--bg-2);border:1px solid var(--border);border-radius:12px;
+    overflow:hidden;position:relative;transition:border-color .15s,opacity .2s;
+  }
+  .nft.ok{border-color:rgba(46,204,143,.5)}
+  .nft.bad{opacity:.55}
+  .nft.bad{border-color:rgba(255,92,114,.35)}
+  .nft .img{aspect-ratio:1;background:#0e1118;display:grid;place-items:center;overflow:hidden}
+  .nft .img img{width:100%;height:100%;object-fit:cover;display:block}
+  .nft .img .ph{color:#3a4252;font-size:12px}
+  .nft .meta{padding:11px 12px}
+  .nft .meta .name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nft .meta .sub{font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .badge{
+    position:absolute;top:9px;right:9px;font-size:11px;font-weight:700;
+    padding:5px 9px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;
+    backdrop-filter:blur(4px);
+  }
+  .badge.ok{background:rgba(46,204,143,.16);color:var(--green);border:1px solid rgba(46,204,143,.4)}
+  .badge.bad{background:rgba(255,92,114,.16);color:var(--red);border:1px solid rgba(255,92,114,.4)}
+  .badge.pend{background:rgba(255,207,92,.14);color:var(--yellow);border:1px solid rgba(255,207,92,.4)}
+  .badge .mini-spin{width:11px;height:11px;border:2px solid rgba(255,207,92,.4);border-top-color:var(--yellow);border-radius:50%;animation:spin .7s linear infinite}
+
+  /* log */
+  .log{
+    background:#080a0f;border:1px solid var(--border);border-radius:10px;
+    padding:12px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:12px;line-height:1.7;max-height:200px;overflow:auto;color:var(--muted);
+  }
+  .log .li{white-space:pre-wrap;word-break:break-word}
+  .log .li.err{color:var(--red)} .log .li.ok{color:var(--green)} .log .li.info{color:var(--accent-2)}
+  .empty{color:var(--muted);font-size:13.5px;text-align:center;padding:40px 0}
+  .hint{font-size:11.5px;color:#6b7285;margin-top:8px}
+  .bar{
+    height:8px;border-radius:999px;background:var(--bg-2);overflow:hidden;border:1px solid var(--border);margin:6px 0 14px;
+  }
+  .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .3s}
+  a.link{color:var(--accent-2);text-decoration:none}
+  a.link:hover{text-decoration:underline}
+  .row-between{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">N</div>
+      <div>
+        <h1>NFT Batch Sender</h1>
+        <p>Пакетная передача NFT через Ambire Wallet · EIP-5792 · до 100 NFT за транзакцию</p>
+        <p class="hint" style="margin-top:6px">Не открывайте как файл (file://). Положите HTML на localhost, например http://localhost:8080/nft-batch-sender.html — иначе расширение кошелька не внедряется.</p>
+      </div>
+    </div>
+    <div class="wallet-box">
+      <span class="pill"><span id="dot" class="dot"></span><span id="walletLabel">Не подключено</span></span>
+    </div>
+  </header>
+
+  <!-- Настройки -->
+  <section class="card">
+    <h2>1 · Настройки</h2>
+    <div class="grid">
+      <div class="field">
+        <label for="network">Сеть</label>
+        <select id="network">
+          <option value="all">Все сети</option>
+          <option value="ethereum">Ethereum</option>
+          <option value="optimism">OP Mainnet</option>
+          <option value="bsc">BNB Chain</option>
+          <option value="polygon">Polygon</option>
+          <option value="base">Base</option>
+          <option value="arbitrum">Arbitrum</option>
+          <option value="unichain">Unichain</option>
+          <option value="linea">Linea</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="recipient">Адрес получателя</label>
+        <input id="recipient" placeholder="0x..." autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="field">
+        <label for="apiKey">OpenSea API Key</label>
+        <input id="apiKey" placeholder="OpenSea (необязательно, если есть Etherscan)" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="field">
+        <label for="esKey">Etherscan API Key</label>
+        <input id="esKey" placeholder="Один ключ на все сети Etherscan v2" autocomplete="off" spellcheck="false" />
+        <div class="hint">Один ключ с etherscan.io/apidashboard на все сети (Ethereum, Optimism, Polygon, Arbitrum и т.д.) через chainid. OpenSea на Optimism почти пустой — список NFT берём из Etherscan.</div>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="connectBtn" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 7H3V17H21V7Z" stroke="currentColor" stroke-width="2"/><path d="M16 12H18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Подключить Ambire Wallet
+      </button>
+      <button id="loadBtn" class="btn btn-ghost" disabled>Загрузить и проверить NFT</button>
+    </div>
+  </section>
+
+  <!-- NFT -->
+  <section class="card">
+    <div class="row-between" style="margin-bottom:16px">
+      <h2 style="margin:0">2 · Ваши NFT</h2>
+      <span id="listMeta" class="hint" style="margin:0"></span>
+    </div>
+
+    <div class="bar" id="progWrap" style="display:none"><i id="prog"></i></div>
+
+    <div class="stats" id="stats" style="display:none">
+      <div class="stat a"><div class="n" id="stTotal">0</div><div class="l">Всего найдено</div></div>
+      <div class="stat g"><div class="n" id="stOk">0</div><div class="l">Передаваемые</div></div>
+      <div class="stat r"><div class="n" id="stBad">0</div><div class="l">Непередаваемые</div></div>
+    </div>
+
+    <div id="nftList" class="nft-list"></div>
+    <div id="emptyState" class="empty">Подключите кошелёк и нажмите «Загрузить и проверить NFT».</div>
+
+    <button id="sendBtn" class="btn btn-send" disabled>
+      Отправить пакет (0 NFT)
+    </button>
+  </section>
+
+  <!-- Лог -->
+  <section class="card">
+    <h2>Лог</h2>
+    <div id="log" class="log"><div class="li">Готов к работе.</div></div>
+  </section>
+</div>
+
+<script type="module">
+import {
+  createPublicClient, http, custom, createWalletClient,
+  encodeFunctionData, isAddress, getAddress, numberToHex, defineChain
+} from 'https://esm.sh/viem@2.21.55';
+import { mainnet, polygon, base, arbitrum, optimism, bsc, linea } from 'https://esm.sh/viem@2.21.55/chains';
+const unichain = defineChain({
+  id: 130,
+  name: 'Unichain',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: { default: { http: ['https://unichain-rpc.publicnode.com'] } },
+});
+
+const NETWORKS = {
+  ethereum: { chain: mainnet,   osChain: 'ethereum', osAliases: ['ethereum'], label: 'Ethereum', explorer: 'https://eth.blockscout.com' },
+  optimism: { chain: optimism,  osChain: 'optimism', osAliases: ['optimism'], label: 'OP Mainnet', explorer: 'https://explorer.optimism.io' },
+  bsc:      { chain: bsc,       osChain: 'bsc',      osAliases: ['bsc', 'bnb'], label: 'BNB Chain' },
+  polygon:  { chain: polygon,   osChain: 'matic',    osAliases: ['matic', 'polygon'], label: 'Polygon', explorer: 'https://polygon.blockscout.com' },
+  base:     { chain: base,      osChain: 'base',     osAliases: ['base'], label: 'Base', explorer: 'https://base.blockscout.com' },
+  arbitrum: { chain: arbitrum,  osChain: 'arbitrum', osAliases: ['arbitrum'], label: 'Arbitrum', explorer: 'https://arbitrum.blockscout.com' },
+  unichain: { chain: unichain,  osChain: 'unichain', osAliases: ['unichain'], label: 'Unichain', explorer: 'https://unichain.blockscout.com' },
+  linea:    { chain: linea,     osChain: 'linea',    osAliases: ['linea'], label: 'Linea', explorer: 'https://explorer.linea.build' },
+};
+
+const ERC721_ABI = [
+  { name:'approve', type:'function', stateMutability:'nonpayable',
+    inputs:[{name:'to',type:'address'},{name:'tokenId',type:'uint256'}], outputs:[] },
+  { name:'transferFrom', type:'function', stateMutability:'nonpayable',
+    inputs:[{name:'from',type:'address'},{name:'to',type:'address'},{name:'tokenId',type:'uint256'}], outputs:[] },
+  { name:'safeTransferFrom', type:'function', stateMutability:'nonpayable',
+    inputs:[{name:'from',type:'address'},{name:'to',type:'address'},{name:'tokenId',type:'uint256'}], outputs:[] },
+];
+const ERC1155_ABI = [
+  { name:'setApprovalForAll', type:'function', stateMutability:'nonpayable',
+    inputs:[{name:'operator',type:'address'},{name:'approved',type:'bool'}], outputs:[] },
+  { name:'safeTransferFrom', type:'function', stateMutability:'nonpayable',
+    inputs:[
+      {name:'from',type:'address'},{name:'to',type:'address'},
+      {name:'id',type:'uint256'},{name:'amount',type:'uint256'},{name:'data',type:'bytes'}
+    ], outputs:[] },
+];
+const RPC = {
+  ethereum: 'https://ethereum-rpc.publicnode.com',
+  optimism: 'https://optimism-rpc.publicnode.com',
+  bsc:      'https://bsc-rpc.publicnode.com',
+  polygon:  'https://polygon-bor-rpc.publicnode.com',
+  base:     'https://base-rpc.publicnode.com',
+  arbitrum: 'https://arbitrum-one-rpc.publicnode.com',
+  unichain: 'https://unichain-rpc.publicnode.com',
+  linea:    'https://linea-rpc.publicnode.com',
+};
+
+/** Ambire execute() + RPC не тянут 300+ вызовов в одном wallet_sendCalls. */
+const BATCH_SIZE = 100;
+
+/* ---------- Состояние ---------- */
+const state = {
+  provider: null,
+  account: null,
+  nfts: [],       // { contract, tokenId, name, image, status: 'pending'|'ok'|'bad', reason }
+};
+
+/* ---------- DOM ---------- */
+const $ = (id)=>document.getElementById(id);
+const els = {
+  network: $('network'), recipient: $('recipient'), apiKey: $('apiKey'), esKey: $('esKey'),
+  connectBtn: $('connectBtn'), loadBtn: $('loadBtn'), sendBtn: $('sendBtn'),
+  dot: $('dot'), walletLabel: $('walletLabel'),
+  nftList: $('nftList'), emptyState: $('emptyState'), listMeta: $('listMeta'),
+  stats: $('stats'), stTotal: $('stTotal'), stOk: $('stOk'), stBad: $('stBad'),
+  progWrap: $('progWrap'), prog: $('prog'), log: $('log'),
+};
+
+/* ---------- Логирование ---------- */
+function log(msg, type=''){
+  const t = new Date().toLocaleTimeString('ru-RU');
+  const li = document.createElement('div');
+  li.className = 'li ' + type;
+  li.textContent = `[${t}] ${msg}`;
+  els.log.appendChild(li);
+  els.log.scrollTop = els.log.scrollHeight;
+}
+
+/* ---------- localStorage для API-ключа ---------- */
+els.apiKey.value = localStorage.getItem('opensea_api_key') || '3dcf46b9b62d440996a0c7c2e6a1ea55';
+els.apiKey.addEventListener('input', ()=> localStorage.setItem('opensea_api_key', els.apiKey.value.trim()));
+els.esKey.value = localStorage.getItem('etherscan_api_key') || '';
+els.esKey.addEventListener('input', ()=> localStorage.setItem('etherscan_api_key', els.esKey.value.trim()));
+els.recipient.value = localStorage.getItem('recipient_addr') || '0x71D520341b700FdC1Ce499509861656992157af3';
+els.recipient.addEventListener('input', ()=> localStorage.setItem('recipient_addr', els.recipient.value.trim()));
+els.network.value = localStorage.getItem('network') || 'all';
+els.network.addEventListener('change', ()=> localStorage.setItem('network', els.network.value));
+
+/* ---------- Поиск провайдера Ambire (EIP-6963 + fallback) ---------- */
+const discovered = [];
+window.addEventListener('eip6963:announceProvider', (e)=> discovered.push(e.detail));
+window.dispatchEvent(new Event('eip6963:requestProvider'));
+
+function pickProvider(){
+  const ambire = discovered.find(p => /ambire/i.test((p.info && (p.info.name || p.info.rdns)) || ''));
+  if (ambire) return ambire.provider;
+  if (discovered[0]) return discovered[0].provider;
+  if (window.ambire) return window.ambire;
+  if (window.ethereum) return window.ethereum;
+  return null;
+}
+
+async function discoverProviders(){
+  window.dispatchEvent(new Event('eip6963:requestProvider'));
+  await new Promise(r => setTimeout(r, 250));
+}
+
+/* ---------- Подключение кошелька ---------- */
+els.connectBtn.addEventListener('click', connectWallet);
+
+async function connectWallet(){
+  if (window.top !== window.self){
+    log('Страница открыта во фрейме. Кошелёк так не подключается.', 'err');
+    alert('Откройте страницу напрямую, не во фрейме.');
+    return;
+  }
+  if (location.protocol === 'file:'){
+    log('Открыто как file:// — расширения кошелька сюда не подключаются.', 'err');
+    alert('Не открывайте HTML как файл с диска.\n\nСкопируйте nft-batch-sender.html в папку вашего localhost:8080 и откройте так:\nhttp://localhost:8080/nft-batch-sender.html\n\nЛибо в расширении Ambire включите «Allow access to file URLs».');
+    return;
+  }
+  await discoverProviders();
+  const provider = pickProvider();
+  if (!provider){
+    log('Провайдер кошелька не найден. Нужно расширение Ambire/MetaMask на http:// или https:// странице.', 'err');
+    alert('Кошелёк не найден.\nРазблокируйте Ambire и обновите вкладку.\nСтраница должна быть http://localhost:... или https://, не file://');
+    return;
+  }
+  try{
+    setBtnLoading(els.connectBtn, true, 'Подключение...');
+    const accounts = await provider.request({ method:'eth_requestAccounts' });
+    if (!accounts || !accounts.length) throw new Error('Аккаунты не получены');
+    state.provider = provider;
+    state.account = getAddress(accounts[0]);
+    els.dot.classList.add('on');
+    els.walletLabel.textContent = short(state.account);
+    els.connectBtn.innerHTML = 'Кошелёк подключён ✓';
+    els.loadBtn.disabled = false;
+    log('Кошелёк подключён: ' + state.account, 'ok');
+
+    provider.on && provider.on('accountsChanged', (accs)=>{
+      if (!accs.length){ location.reload(); return; }
+      state.account = getAddress(accs[0]);
+      els.walletLabel.textContent = short(state.account);
+      log('Смена аккаунта: ' + state.account, 'info');
+    });
+  }catch(err){
+    log('Ошибка подключения: ' + (err.shortMessage || err.message), 'err');
+    setBtnLoading(els.connectBtn, false);
+    els.connectBtn.innerHTML = 'Подключить Ambire Wallet';
+  }
+}
+
+/* ---------- Загрузка NFT из OpenSea + симуляция ---------- */
+els.loadBtn.addEventListener('click', loadAndCheck);
+
+async function loadAndCheck(){
+  const apiKey = els.apiKey.value.trim();
+  const recipient = els.recipient.value.trim();
+  const netKey = els.network.value;
+  const net = NETWORKS[netKey];
+
+  if (!state.account){ log('Сначала подключите кошелёк.', 'err'); return; }
+  if (!els.esKey.value.trim()){ log('Нужен Etherscan API Key (один на все сети).', 'err'); return; }
+  if (!isAddress(recipient)){ log('Некорректный адрес получателя.', 'err'); return; }
+
+  // reset
+  state.nfts = [];
+  els.nftList.innerHTML = '';
+  els.sendBtn.disabled = true;
+  els.stats.style.display = 'none';
+  setBtnLoading(els.loadBtn, true, 'Загрузка...');
+
+  try{
+    const keys = netKey === 'all' ? Object.keys(NETWORKS) : [netKey];
+    const mapped = [];
+    for (const key of keys){
+      const ninfo = NETWORKS[key];
+      log('Запрос NFT: ' + ninfo.label + '...', 'info');
+      try{
+        const raw = await fetchAllNfts(key, state.account, apiKey);
+        log(ninfo.label + ': найдено ' + raw.length, 'ok');
+        raw.forEach(n => mapped.push({
+          netKey: key,
+          contract: normContract(n.contract),
+          tokenId: normId(n.identifier),
+          name: n.name || `${n.collection || 'NFT'} #${n.identifier}`,
+          image: n.display_image_url || n.image_url || '',
+          standard: String(n.token_standard || 'erc721').toLowerCase().replace('-', ''),
+          status: 'pending', reason: ''
+        }));
+      }catch(e){
+        log(ninfo.label + ': ' + (e.message || e), 'err');
+      }
+    }
+    const rawLen = mapped.length;
+    log('Всего NFT: ' + rawLen, 'ok');
+
+    if (!rawLen){
+      els.emptyState.style.display = 'block';
+      els.emptyState.textContent = 'NFT не найдены.';
+      setBtnLoading(els.loadBtn, false, 'Загрузить и проверить NFT');
+      return;
+    }
+
+    state.nfts = mapped;
+
+    els.emptyState.style.display = 'none';
+    renderList();
+    renderStats();
+    els.stats.style.display = 'flex';
+    els.progWrap.style.display = 'block';
+
+    // публичный клиент viem для симуляции
+    const clients = {};
+    function clientFor(key){
+      if (!clients[key]) {
+        clients[key] = createPublicClient({
+          chain: NETWORKS[key].chain,
+          transport: http(RPC[key]),
+        });
+      }
+      return clients[key];
+    }
+
+    log('Симуляция transferFrom / safeTransferFrom...', 'info');
+    let done = 0;
+    for (const nft of state.nfts){
+      await checkTransferable(clientFor(nft.netKey), nft, recipient);
+      done++;
+      els.prog.style.width = Math.round(done / state.nfts.length * 100) + '%';
+      updateCard(nft);
+      renderStats();
+    }
+
+    els.progWrap.style.display = 'none';
+    const okCount = state.nfts.filter(n=>n.status==='ok').length;
+    log(`Проверка завершена. Передаваемых: ${okCount}, непередаваемых: ${state.nfts.length-okCount}.`, 'ok');
+    updateSendBtn();
+  }catch(err){
+    log('Ошибка загрузки: ' + (err.message || err), 'err');
+    els.progWrap.style.display = 'none';
+  }finally{
+    setBtnLoading(els.loadBtn, false, 'Загрузить и проверить NFT');
+  }
+}
+
+async function fetchOpenSeaChain(osChain, address, apiKey){
+  const out = [];
+  let next = '';
+  let page = 0;
+  do{
+    const url = new URL(`https://api.opensea.io/api/v2/chain/${osChain}/account/${address}/nfts`);
+    url.searchParams.set('limit','50');
+    url.searchParams.set('include_auto_hidden','true');
+    if (next) url.searchParams.set('next', next);
+    const res = await fetch(url, { headers:{ 'accept':'application/json', 'x-api-key': apiKey } });
+    if (!res.ok){
+      const txt = await res.text().catch(()=> '');
+      throw new Error(`OpenSea API ${res.status} (${osChain}): ${txt.slice(0,160)}`);
+    }
+    const data = await res.json();
+    (data.nfts || []).forEach(n => out.push(n));
+    next = data.next || (data.pagination && data.pagination.next) || '';
+    if (typeof next === 'object' && next) next = next.next || next.cursor || '';
+    page++;
+    log('OpenSea страница ' + page + ' (' + osChain + '): +' + (data.nfts||[]).length + ', всего ' + out.length, 'info');
+  } while(next && page < 80);
+  return out;
+}
+
+function normId(id){
+  if (id == null || id === '') return '';
+  try { return String(BigInt(id)); } catch { return String(id); }
+}
+function normContract(c){
+  if (!c) return '';
+  if (typeof c === 'string') return c;
+  return c.address || c.address_hash || '';
+}
+function dedupeNfts(list){
+  const map = new Map();
+  for (const n of list){
+    const contract = normContract(n.contract);
+    const identifier = normId(n.identifier);
+    if (!contract || identifier === '') continue;
+    n.contract = contract;
+    n.identifier = identifier;
+    const key = contract.toLowerCase() + ':' + identifier;
+    if (!map.has(key)) map.set(key, n);
+  }
+  return [...map.values()];
+}
+
+async function fetchBlockscoutNfts(netKey, address){
+  const ninfo = NETWORKS[netKey];
+  const base = ninfo && ninfo.explorer;
+  if (!base) return [];
+  const out = [];
+  let params = new URLSearchParams({ type: 'ERC-721,ERC-1155' });
+  for (let page = 0; page < 80; page++){
+    const url = `${base}/api/v2/addresses/${address}/nft?${params.toString()}`;
+    const res = await fetch(url, { headers: { accept: 'application/json' } });
+    if (!res.ok){
+      const txt = await res.text().catch(()=> '');
+      throw new Error(`Explorer ${res.status} (${ninfo.label}): ${txt.slice(0,160)}`);
+    }
+    const data = await res.json();
+    const items = data.items || [];
+    for (const it of items){
+      const token = it.token || {};
+      const contract = token.address_hash || token.address || '';
+      const identifier = normId(it.id);
+      if (!contract || identifier === '') continue;
+      const qty = Number(it.value || 1);
+      if (qty <= 0) continue;
+      const meta = it.metadata || {};
+      out.push({
+        contract,
+        identifier,
+        name: meta.name || token.name || 'NFT',
+        collection: token.name || '',
+        token_standard: String(it.token_type || token.type || 'ERC-721').toLowerCase().replace('-', ''),
+        image_url: it.image_url || it.media_url || meta.image || '',
+        display_image_url: it.image_url || it.media_url || '',
+      });
+    }
+    log('Explorer ' + ninfo.label + ' стр.' + (page+1) + ': +' + items.length + ', всего ' + out.length, 'info');
+    const next = data.next_page_params;
+    if (!next || !items.length) break;
+    params = new URLSearchParams({ type: 'ERC-721,ERC-1155' });
+    Object.entries(next).forEach(([k,v]) => {
+      if (v != null && v !== '') params.set(k, String(v));
+    });
+  }
+  return out;
+}
+
+const ES_PAGE = 1000;
+const esSleep = () => new Promise(r => setTimeout(r, 260));
+
+async function etherscanCall(chainId, action, extra, apiKey){
+  const url = new URL('https://api.etherscan.io/v2/api');
+  url.searchParams.set('chainid', String(chainId));
+  url.searchParams.set('module', 'account');
+  url.searchParams.set('action', action);
+  url.searchParams.set('apikey', apiKey);
+  Object.entries(extra || {}).forEach(([k,v]) => {
+    if (v != null && v !== '') url.searchParams.set(k, String(v));
+  });
+  const res = await fetch(url);
+  const data = await res.json();
+  if (data.status === '0' && !Array.isArray(data.result)) {
+    throw new Error(data.result || data.message || 'Etherscan error');
+  }
+  return Array.isArray(data.result) ? data.result : [];
+}
+
+async function etherscanAction(chainId, action, address, apiKey, page){
+  return etherscanCall(chainId, action, {
+    address, page, offset: ES_PAGE, sort: 'asc', startblock: '0', endblock: '99999999',
+  }, apiKey);
+}
+
+function applyNftTransfers(hold, rows, qtyField){
+  const me = state.account.toLowerCase();
+  for (const tx of rows){
+    const contract = (tx.contractAddress || '').toLowerCase();
+    const id = String(tx.tokenID);
+    if (!contract || id === 'undefined') continue;
+    const key = contract + ':' + id;
+    const from = (tx.from || '').toLowerCase();
+    const to = (tx.to || '').toLowerCase();
+    const qty = qtyField ? Number(tx[qtyField] || tx.tokenValue || 1) : 1;
+    if (!hold[key]) hold[key] = { contract: tx.contractAddress, identifier: id, name: tx.tokenName || 'NFT', qty: 0, token_standard: qtyField ? 'erc1155' : 'erc721' };
+    if (to === me) hold[key].qty += qty || 1;
+    if (from === me) hold[key].qty -= qty || 1;
+  }
+}
+
+async function fetchEtherscanInventory(chainId, address, apiKey, label){
+  const out = [];
+  try{
+    const collections = [];
+    for (let page = 1; page <= 50; page++){
+      const rows = await etherscanCall(chainId, 'addresstokennftbalance', {
+        address, page, offset: 100,
+      }, apiKey);
+      log('Etherscan коллекции ' + label + ' стр.' + page + ': ' + rows.length, 'info');
+      collections.push.apply(collections, rows);
+      if (rows.length < 100) break;
+      await esSleep();
+    }
+    for (const col of collections){
+      const contract = col.TokenAddress || col.tokenAddress || col.contractAddress;
+      const name = col.TokenName || col.tokenName || 'NFT';
+      const qty = Number(col.TokenQuantity || col.tokenQuantity || 0);
+      if (!contract || qty <= 0) continue;
+      for (let page = 1; page <= 100; page++){
+        const rows = await etherscanCall(chainId, 'addresstokennftinventory', {
+          address, contractaddress: contract, page, offset: ES_PAGE,
+        }, apiKey);
+        for (const row of rows){
+          const identifier = normId(row.TokenId || row.tokenID || row.tokenId);
+          if (!identifier) continue;
+          out.push({
+            contract,
+            identifier,
+            name: name + ' #' + identifier,
+            collection: name,
+            token_standard: 'erc721',
+            image_url: '',
+            display_image_url: '',
+          });
+        }
+        if (rows.length < ES_PAGE) break;
+        await esSleep();
+      }
+      await esSleep();
+    }
+    if (out.length) log('Etherscan inventory ' + label + ': ' + out.length, 'ok');
+  }catch(err){
+    log('Etherscan inventory ' + label + ': ' + (err.message || err) + ' — берём по переводам', 'info');
+  }
+  return out;
+}
+
+async function fetchEtherscanNfts(netKey, address, apiKey){
+  const ninfo = NETWORKS[netKey];
+  const chainId = ninfo.chain.id;
+  const fromInv = await fetchEtherscanInventory(chainId, address, apiKey, ninfo.label);
+  const hold = {};
+  let page = 1;
+  while (page <= 100){
+    const rows = await etherscanAction(chainId, 'tokennfttx', address, apiKey, page);
+    applyNftTransfers(hold, rows, null);
+    log('Etherscan ERC721 ' + ninfo.label + ' стр.' + page + ': ' + rows.length, 'info');
+    if (rows.length < ES_PAGE) break;
+    page++;
+    await esSleep();
+  }
+  page = 1;
+  try{
+    while (page <= 100){
+      const rows = await etherscanAction(chainId, 'token1155tx', address, apiKey, page);
+      applyNftTransfers(hold, rows, 'tokenValue');
+      log('Etherscan ERC1155 ' + ninfo.label + ' стр.' + page + ': ' + rows.length, 'info');
+      if (rows.length < ES_PAGE) break;
+      page++;
+      await esSleep();
+    }
+  }catch(_){}
+  const fromTx = Object.values(hold).filter(x => x.qty > 0).map(x => ({
+    contract: x.contract,
+    identifier: normId(x.identifier),
+    name: x.name + ' #' + x.identifier,
+    collection: x.name,
+    token_standard: x.token_standard,
+    image_url: '',
+    display_image_url: '',
+  }));
+  return dedupeNfts(fromInv.concat(fromTx));
+}
+
+async function fetchAllNfts(netKey, address, apiKey){
+  const ninfo = NETWORKS[netKey];
+  const aliases = (ninfo && ninfo.osAliases) || [ninfo.osChain];
+  const batches = [];
+  let lastErr = null;
+
+  const jobs = [];
+
+  if (ninfo.explorer){
+    jobs.push((async () => {
+      const part = await fetchBlockscoutNfts(netKey, address);
+      log('Explorer (' + ninfo.label + '): ' + part.length, 'ok');
+      return part;
+    })());
+  }
+  if (apiKey){
+    for (const chain of aliases){
+      jobs.push((async () => {
+        const part = await fetchOpenSeaChain(chain, address, apiKey);
+        log('OpenSea (' + chain + '): ' + part.length, 'info');
+        return part;
+      })());
+    }
+  }
+  const esKey = els.esKey.value.trim();
+  if (esKey){
+    jobs.push((async () => {
+      const part = await fetchEtherscanNfts(netKey, address, esKey);
+      log('Etherscan (' + ninfo.label + '): ' + part.length, 'ok');
+      return part;
+    })());
+  }
+
+  const results = await Promise.allSettled(jobs);
+  for (const r of results){
+    if (r.status === 'fulfilled') batches.push.apply(batches, r.value);
+    else {
+      lastErr = r.reason;
+      log(String((r.reason && (r.reason.message || r.reason)) || r.reason), 'err');
+    }
+  }
+  const merged = dedupeNfts(batches);
+  if (!merged.length && lastErr) throw lastErr;
+  return merged;
+}
+
+async function checkTransferable(publicClient, nft, recipient){
+  const contract = getAddress(nft.contract);
+  const tokenId = BigInt(nft.tokenId);
+  const is1155 = (nft.standard || '').includes('1155');
+  try{
+    if (is1155) {
+      try {
+        await publicClient.simulateContract({
+          address: contract, abi: ERC1155_ABI, functionName:'setApprovalForAll',
+          args:[recipient, true], account: state.account,
+        });
+      } catch (_) {}
+      await publicClient.simulateContract({
+        address: contract, abi: ERC1155_ABI, functionName:'safeTransferFrom',
+        args:[state.account, recipient, tokenId, 1n, '0x'], account: state.account,
+      });
+      nft.callFn = 'safeTransferFrom1155';
+    } else {
+      try {
+        await publicClient.simulateContract({
+          address: contract, abi: ERC721_ABI, functionName:'approve',
+          args:[recipient, tokenId], account: state.account,
+        });
+      } catch (_) {}
+      try {
+        await publicClient.simulateContract({
+          address: contract, abi: ERC721_ABI, functionName:'transferFrom',
+          args:[state.account, recipient, tokenId], account: state.account,
+        });
+        nft.callFn = 'transferFrom';
+      } catch (_) {
+        await publicClient.simulateContract({
+          address: contract, abi: ERC721_ABI, functionName:'safeTransferFrom',
+          args:[state.account, recipient, tokenId], account: state.account,
+        });
+        nft.callFn = 'safeTransferFrom';
+      }
+    }
+    nft.status = 'ok';
+  }catch(err){
+    nft.status = 'bad';
+    nft.reason = (err.shortMessage || err.details || err.message || 'revert').split('\n')[0];
+    log(`Непередаваемый: ${short(contract)} #${nft.tokenId} — ${nft.reason}`, 'err');
+  }
+}
+
+/* ---------- Отправка пакета через wallet_sendCalls (EIP-5792 / 7702) ---------- */
+els.sendBtn.addEventListener('click', sendBatch);
+
+function buildCall(n, recipient){
+  if (n.callFn === 'safeTransferFrom1155') {
+    return {
+      to: getAddress(n.contract),
+      data: encodeFunctionData({
+        abi: ERC1155_ABI, functionName:'safeTransferFrom',
+        args:[state.account, recipient, BigInt(n.tokenId), 1n, '0x'],
+      }),
+      value: '0x0',
+    };
+  }
+  return {
+    to: getAddress(n.contract),
+    data: encodeFunctionData({
+      abi: ERC721_ABI,
+      functionName: n.callFn === 'safeTransferFrom' ? 'safeTransferFrom' : 'transferFrom',
+      args:[state.account, recipient, BigInt(n.tokenId)],
+    }),
+    value: '0x0',
+  };
+}
+
+async function switchChain(net){
+  const hex = numberToHex(net.chain.id);
+  try{
+    await state.provider.request({ method:'wallet_switchEthereumChain', params:[{ chainId: hex }] });
+  }catch(e){
+    if (e && e.code === 4902){
+      await state.provider.request({
+        method:'wallet_addEthereumChain',
+        params:[{
+          chainId: hex,
+          chainName: net.label,
+          nativeCurrency: net.chain.nativeCurrency || { name:'ETH', symbol:'ETH', decimals:18 },
+          rpcUrls: [RPC[Object.keys(NETWORKS).find(k => NETWORKS[k]===net)] || ''],
+        }]
+      });
+    }
+  }
+}
+
+async function sendCallsOnChain(net, calls){
+  const params = [{
+    version: '2.0.0',
+    from: state.account,
+    chainId: numberToHex(net.chain.id),
+    atomicRequired: true,
+    calls,
+  }];
+  try{
+    return await state.provider.request({ method:'wallet_sendCalls', params });
+  }catch(e){
+    params[0].version = '1.0';
+    delete params[0].atomicRequired;
+    return await state.provider.request({ method:'wallet_sendCalls', params });
+  }
+}
+
+async function sendBatch(){
+  const recipient = els.recipient.value.trim();
+  const survivors = state.nfts.filter(n => n.status === 'ok');
+  if (!survivors.length){ log('Нет передаваемых NFT.', 'err'); return; }
+
+  const byChain = {};
+  survivors.forEach(n => {
+    const k = n.netKey || els.network.value;
+    (byChain[k] = byChain[k] || []).push(n);
+  });
+
+  try{
+    setBtnLoading(els.sendBtn, true, 'Отправка пакетов...');
+    for (const key of Object.keys(byChain)){
+      const net = NETWORKS[key];
+      const items = byChain[key];
+      log(net.label + ': ' + items.length + ' NFT, переключение сети...', 'info');
+      await switchChain(net);
+      const parts = Math.ceil(items.length / BATCH_SIZE);
+      for (let i = 0; i < items.length; i += BATCH_SIZE) {
+        const chunk = items.slice(i, i + BATCH_SIZE);
+        const calls = chunk.map(n => buildCall(n, recipient));
+        const part = Math.floor(i / BATCH_SIZE) + 1;
+        log(net.label + ': пакет ' + part + '/' + parts + ' — ' + calls.length + ' NFT', 'info');
+        const result = await sendCallsOnChain(net, calls);
+        const id = (result && (result.id || result)) || '';
+        log(net.label + ' пакет ' + part + '/' + parts + ' отправлен ✓ ' + id, 'ok');
+      }
+    }
+    alert('Пакеты отправлены в Ambire (по ' + BATCH_SIZE + ' NFT за раз).');
+  }catch(err){
+    log('Ошибка отправки: ' + (err.shortMessage || err.message || err), 'err');
+    alert('Ошибка отправки: ' + (err.shortMessage || err.message || err));
+  }finally{
+    setBtnLoading(els.sendBtn, false);
+    updateSendBtn();
+  }
+}
+
+/* ---------- Рендер ---------- */
+function renderList(){
+  els.nftList.innerHTML = '';
+  state.nfts.forEach((n, i) => {
+    const el = document.createElement('div');
+    el.className = 'nft';
+    el.id = 'nft-' + i;
+    el.innerHTML = cardInner(n);
+    els.nftList.appendChild(el);
+  });
+  els.listMeta.textContent = `${state.nfts.length} шт.`;
+}
+
+function cardInner(n){
+  const img = n.image
+    ? `<img src="${escapeAttr(n.image)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='<span class=&quot;ph&quot;>нет изображения</span>'"/>`
+    : `<span class="ph">нет изображения</span>`;
+  return `
+    ${badge(n)}
+    <div class="img">${img}</div>
+    <div class="meta">
+      <div class="name" title="${escapeAttr(n.name)}">${escapeHtml(n.name)}</div>
+      <div class="sub" title="${escapeAttr(n.reason || '')}">${escapeHtml((NETWORKS[n.netKey]&&NETWORKS[n.netKey].label)||'')} · ${short(n.contract)} · #${escapeHtml(String(n.tokenId))}${n.status==='bad' && n.reason ? ' · '+escapeHtml(n.reason) : ''}</div>
+    </div>`;
+}
+
+function badge(n){
+  if (n.status === 'ok') return `<span class="badge ok">✓ Передаваемый</span>`;
+  if (n.status === 'bad') return `<span class="badge bad">✕ Непередаваемый</span>`;
+  return `<span class="badge pend"><span class="mini-spin"></span>Проверка</span>`;
+}
+
+function updateCard(n){
+  const i = state.nfts.indexOf(n);
+  const el = document.getElementById('nft-' + i);
+  if (!el) return;
+  el.className = 'nft ' + (n.status==='ok'?'ok':n.status==='bad'?'bad':'');
+  el.innerHTML = cardInner(n);
+}
+
+function renderStats(){
+  const ok = state.nfts.filter(n=>n.status==='ok').length;
+  const bad = state.nfts.filter(n=>n.status==='bad').length;
+  els.stTotal.textContent = state.nfts.length;
+  els.stOk.textContent = ok;
+  els.stBad.textContent = bad;
+}
+
+function updateSendBtn(){
+  const ok = state.nfts.filter(n=>n.status==='ok').length;
+  const parts = Math.max(1, Math.ceil(ok / BATCH_SIZE));
+  els.sendBtn.textContent = ok
+    ? `Отправить ${ok} NFT · ${parts} пакет${parts===1?'':'а'} по ${Math.min(BATCH_SIZE, ok)}`
+    : 'Отправить пакет (0 NFT)';
+  els.sendBtn.disabled = ok === 0;
+}
+
+/* ---------- Утилиты ---------- */
+function short(a){ return a ? a.slice(0,6)+'…'+a.slice(-4) : ''; }
+function setBtnLoading(btn, loading, text){
+  if (loading){
+    btn.disabled = true;
+    btn.dataset.html = btn.innerHTML;
+    btn.innerHTML = `<span class="spinner"></span>${text||'...'}`;
+  } else {
+    btn.disabled = false;
+    if (text) btn.innerHTML = text;
+    else if (btn.dataset.html) btn.innerHTML = btn.dataset.html;
+  }
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s){ return escapeHtml(s); }
+
+log('Интерфейс загружен. Библиотека viem подключена.', 'info');
+</script>
+</body>
+</html>
